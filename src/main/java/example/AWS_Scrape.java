@@ -117,7 +117,7 @@ public class AWS_Scrape {
 			document = PDDocument.load(input);
 			String pdf_text = pdfStripper.getText(document);
 			writer = new FileWriter(output_txt);
-			// pdf text parses better when spaces replaced with special char "~", will be
+			//pdf text parses better when spaces replaced with special char "~", will be
 			pdf_text = pdf_text.replace(" ", "~");
 			writer.write(pdf_text);
 			//must close this writer before opening writer2
@@ -143,16 +143,13 @@ public class AWS_Scrape {
 			// remove/reformat special chars for better parsing
 			String newContent = oldContent.replaceAll("~~", " ").replaceAll("~", " ").replaceAll("±", "").replace(" •", ",").replace(" |", ",");
 			for(HashMap.Entry<String, String> entry : abbreviations.entrySet()) {
-				//replace "florida" with "FL" for better address parsing
+				//replace full state names with abbreviations for regex matching (e.g. "florida" -> "FL")
 				newContent = newContent.replaceFirst(entry.getKey(), entry.getValue());
 			}
 			writer2 = new FileWriter(output_txt);
-			writer2.write(newContent);
-			writer2.write(" ");
-			return output_txt;
+			writer2.write(newContent+" ");
 		}catch (IOException e) {
 			e.printStackTrace();
-			return null;
 		}finally {
 			if (document != null) {
 				try {
@@ -176,6 +173,7 @@ public class AWS_Scrape {
 				}
 			}
 		}
+		return output_txt;
 	}
 
 	/**
@@ -196,7 +194,7 @@ public class AWS_Scrape {
 		ArrayList<String> square_footages  = new ArrayList<String>();
 		ArrayList<String> phone_nums 	   = new ArrayList<String>();
 		BufferedReader bufferreader = null;
-		// word stream supplies tokens from each line
+		// wordstream supplies tokens from each line
 		WordStream ws = new WordStream();
 		try {
 			bufferreader = new BufferedReader(new FileReader(txt_input));
@@ -245,23 +243,24 @@ public class AWS_Scrape {
 							}
 						} else if (token.matches("[0-9]{3}") && last_token.matches("[0-9]{3}") && ws.hasMoreTokens()) {
 							// match PHONE NUMBERS like "425 241 7707"
-							String next_four = ws.nextToken();
-							String phone_number = last_token + "-" + token + "-" + next_four;
+							String phone_number = last_token + "-" + token + "-" + ws.nextToken();
 							if (!phone_nums.contains(phone_number)) {
 								phone_nums.add(phone_number);
 							}
-						} else if (token.matches("[0-9]{3}[.][0-9]{3}[.][0-9]{4}") && !phone_nums.contains(token.replace(".", "-"))) {
+						} else if (token.matches("[0-9]{3}[.][0-9]{3}[.][0-9]{4}.*")) {
 							// match PHONE NUMBERS like "425.241.7707"
 							String phone_number = token.replace(".", "-");
-							phone_nums.add(phone_number);
-						} else if (token.matches("[0-9]{3}[-][0-9]{3}[-][0-9]{4}") && !phone_nums.contains(token)) {
-							// match PHONE NUMBERS like "425-241-7707"
+							if(!phone_nums.contains(phone_number)){
+								phone_nums.add(phone_number.substring(0, 12));
+							}
+						} else if (token.matches("[0-9]{3}[-][0-9]{3}[-][0-9]{4}.*") && !phone_nums.contains(token)) {
+							// match PHONE NUMBERS like "425-241-7707" or "425-341-7707,"
 							phone_nums.add(token);
 						} else if (token.matches("[(][0-9]{3}[)]") && ws.hasMoreTokens()) {
-							// match PHONE NUMBERS like "(425) 241-7707"
+							// match PHONE NUMBERS like "(425) 241-7707" or "(425) 241-7707."
 							String the_rest = ws.nextToken();
-							if (the_rest.matches("[0-9]{3}[-][0-9]{4}") && !phone_nums.contains(token.substring(1, 4) + "-" + the_rest)) {
-								String phone_number = token.substring(1, 4) + "-" + the_rest;
+							String phone_number = token.substring(1, 4) + "-" + the_rest;
+							if (the_rest.matches("[0-9]{3}[-][0-9]{4}.*") && !phone_nums.contains(phone_number)) {
 								phone_nums.add(phone_number);
 							}
 						}
@@ -273,7 +272,6 @@ public class AWS_Scrape {
 				previous_line = line;
 			}
 			if(!addresses.isEmpty()) {
-				System.out.println("Found address");
 				HashMap<String, String> geocoded_info = geocoder.getGeocodedInfo(addresses.get(0));
 				if(geocoded_info != null) {
 					geocoded_address.add(geocoded_info.get("address").replaceAll("\"", ""));
@@ -286,9 +284,7 @@ public class AWS_Scrape {
 					longitude.add("**Unknown**");
 				}
 			}else {
-				System.out.println("Unfound address");
-				AWS_Wrapper.alertNoAddress();
-				System.out.println("done!");
+//				AWS_Wrapper.alertNoAddress();
 				addresses.add("**Unknown**");
 				geocoded_address.add("**Unknown**");
 				latitude.add("**Unknown**");
@@ -310,7 +306,6 @@ public class AWS_Scrape {
 			if (phone_nums.isEmpty()) {
 				phone_nums.add("**Unknown**");
 			}
-			bufferreader.close();
 			property_data.put("Address", addresses);	
 			property_data.put("Geocoded Address", geocoded_address);	
 			property_data.put("Latitude", latitude);	
@@ -321,13 +316,10 @@ public class AWS_Scrape {
 			property_data.put("Phone Numbers", phone_nums);
 			ArrayList<String> contacts = scrapeContactNames(emails, txt_input);
 			property_data.put("Contact Names", contacts);
-			return property_data;
 		} catch (FileNotFoundException ex) {
 			ex.printStackTrace();
-			return null;
 		} catch (IOException ex) {
 			ex.printStackTrace();
-			return null;
 		} finally {
 			if(bufferreader != null) {
 				try {
@@ -337,6 +329,7 @@ public class AWS_Scrape {
 				}
 			}
 		}
+		return property_data;
 	}
 
 	/**
@@ -406,13 +399,10 @@ public class AWS_Scrape {
 					found_contact = false;
 				}
 			}
-			return contacts;
 		} catch (FileNotFoundException ex) {
 			ex.printStackTrace();
-			return null;
 		} catch (IOException ex) {
 			ex.printStackTrace();
-			return null;
 		} finally {
 			if(bufferreader != null) {
 				try {
@@ -422,6 +412,7 @@ public class AWS_Scrape {
 				}
 			}
 		}
+		return contacts;
 	}
 	
 	/**
@@ -452,10 +443,8 @@ public class AWS_Scrape {
 			JsonElement je = jp.parse(file_object.toJSONString());
 	        filew.write(gson.toJson(je));
 	        filew.flush();
-	        return json_output;
 		} catch (IOException e) {
 			e.printStackTrace();
-			return null;
 		} finally {
 			if(filew != null) {
 				try {
@@ -465,5 +454,6 @@ public class AWS_Scrape {
 				}
 			}
 		}
+        return json_output;
 	}
 }

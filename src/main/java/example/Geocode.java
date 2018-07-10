@@ -19,7 +19,7 @@ public class Geocode {
 	public GeoApiContext context;
 	public Gson gson;
 	public HashMap<String, String> map = new HashMap<String, String>();
-	public final String api_key = "AIzaSyBAv1vghEx5gdzH7vHo3OLZTlFB_vm1b7U";
+	public final String api_key = "";
 	
 	/**
 	 * @param api_key for Google Maps API
@@ -41,13 +41,13 @@ public class Geocode {
 				map.put("latitude", gson.toJson(results[0].geometry.location.lat));
 				map.put("longitude", gson.toJson(results[0].geometry.location.lng));
 			}
-			return map;
 		}catch (IOException e) {
-			return map;
+			e.printStackTrace();
 		}catch (InterruptedException i) {
-			return null;
+			i.printStackTrace();
 		}catch (ApiException a) {
-			return null;
+			a.printStackTrace();
 		}
+		return map;
 	}
 }

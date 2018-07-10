@@ -25,7 +25,7 @@ public class TestOutput {
 	
 	public static void main(String[] args) {
 		//scrape the working set
-		scrapeDirectory("/Users/zacharycolerossman/Documents/ML_Flyer_Data/Errors/");
+		scrapeDirectory("/Users/zacharycolerossman/Documents/ML_Flyer_Data/Complete_Test_Set/");
 	}
 	
 	/**
@@ -72,7 +72,6 @@ public class TestOutput {
 		FileWriter pw = null;
 		try {
 			if(!output_csv.exists()) {
-				System.out.println("HI!");
 				output_csv.createNewFile();
 				pw = new FileWriter(new File(output_file_path+"output.csv"), true);
 				sb.append("PDFName, Scraped Address, Geocoded Address, Latitude, Term, Emails, Longitude, Phone Numbers, Square Footage, Contact Names\n");
@@ -92,8 +91,7 @@ public class TestOutput {
 					sb.append("\""+data+"\"");
 				}
 			}
-			sb.append('\n');
-			pw.write(sb.toString());
+			pw.write(sb.append('\n').toString());
 		}catch (IOException e) {
 			e.printStackTrace();
 		}finally {
@@ -102,7 +100,6 @@ public class TestOutput {
 			}catch(IOException e) {
 				e.printStackTrace();
 			}
-			System.out.println("CSV Created!");
 		}
 	}
 }

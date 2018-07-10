@@ -35,13 +35,11 @@ public class AWS_Wrapper implements RequestHandler<Map<String, Map<String, Objec
 	public static final AmazonS3 s3Client = AmazonS3ClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(awsCreds)).withRegion(Regions.US_EAST_1).build();
 	public static String input_name;
 	
+	//Simple testing code
 	public static void main(String[] args) {
 		File temp_pdf_file = createTmp("flyer", ".pdf");
 	    if(s3Client.doesObjectExist(s3_input_bucket, "ki")) {
 			writeObjToTmp(s3_input_bucket, "ki", temp_pdf_file);
-			System.out.println("hi!");
-		}else {
-			System.out.println("bad");
 		}
 	}
 	
@@ -87,13 +85,10 @@ public class AWS_Wrapper implements RequestHandler<Map<String, Map<String, Objec
 		    }
 		} catch (AmazonServiceException e) {
 		    System.err.println(e.getErrorMessage());
-		    System.exit(1);
 		} catch (FileNotFoundException e) {
 		    System.err.println(e.getMessage());
-		    System.exit(1);
 		} catch (IOException e) {
 		    System.err.println(e.getMessage());
-		    System.exit(1);
 		}finally {
 			if(fos != null) {
 				try {
@@ -117,12 +112,13 @@ public class AWS_Wrapper implements RequestHandler<Map<String, Map<String, Objec
 	 * @return the temp
 	 */
 	public static File createTmp(String name, String extension) {
+		File output = null;
 		try {
-			return File.createTempFile(name, extension);
+			output = File.createTempFile(name, extension);
 		} catch (IOException e) {
 			e.printStackTrace();
-			return null;
 		}
+		return output;
 	}
 	
 	/**

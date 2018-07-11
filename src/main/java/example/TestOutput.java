@@ -57,6 +57,7 @@ public class TestOutput {
 			File txt_output = AWS_Scrape.PDFToTxt(file);
 			HashMap<String, ArrayList<String>> property_data = AWS_Scrape.scrapeTxt(txt_output);
 			resultsToCsv(property_data);
+//			AWS_Scrape.resultsToJson(property_data);
 		}
 	}
 	

@@ -15,6 +15,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -76,7 +77,7 @@ public class AWS_Scrape {
 		put("utah", "UT");
 		put("vermont", "VT");
 		put("virginia", "VA");
-		put("washington DC", "DC");
+		put("d.c.", "DC");
 		put("washington", "WA");
 		put("west virginia", "WV");
 		put("wisconson", "WI");
@@ -84,7 +85,7 @@ public class AWS_Scrape {
 	}};
 	public static Collection<String> list_abbrevs = abbreviations.values();
 	public static Geocode geocoder = new Geocode();
-	public static final String output_file_path = "/Users/zacharycolerossman/Documents/ML_Flyer_Data/";
+	public static final String output_file_path = "/Users/zacharycolerossman/Documents/ML_Flyer_Data/Output_Txts/";
 	public static final String input_folder_path = "/Users/zacharycolerossman/Documents/ML_Flyer_Data/Working_Set/";
 	
 	/**
@@ -92,7 +93,7 @@ public class AWS_Scrape {
 	 * @param input PDF file to scrape
 	 * @return a .json file containing the results
 	 */
-	public static File scrape(File input){
+	public static File scrape(File input) {
 		File txt_output = PDFToTxt(input);
 		HashMap<String, ArrayList<String>> data = scrapeTxt(txt_output);
 		return resultsToJson(data);
@@ -104,7 +105,7 @@ public class AWS_Scrape {
 	 * @return txt file which contains PDF text
 	 * @throws IOException 
 	 */
-	public static File PDFToTxt(File input){
+	public static File PDFToTxt(File input) {
 //		File output_txt = AWS_Wrapper.createTmp("output", ".txt");
 		File output_txt = new File(TestOutput.output_file_path+TestOutput.input_pdf_name+".txt");
 		PDDocument document = null;
@@ -128,13 +129,13 @@ public class AWS_Scrape {
 			String oldContent = "";
 			String line = bufferreader.readLine();
 			while (line != null) {
+				line = line.toLowerCase();
 				//edge case for unnecessary spaces between text (e.g. "4 2  A V E N U E")
 				if (line.matches("[~]?[^~][~][^~][~][~]?([^~]?[^~][~][~]?)*[^~]?")) {
 					line = line.replaceAll("~~", " ").replaceAll("~", "");
 				}
-				line = line.toLowerCase();
 				//edge case for addresses ending in "... San Francisco" and missing state/zip
-				if(line.matches(".*san~francisco")) {
+				if (line.matches(".*san~francisco")) {
 					line += ", ca";
 				}
 				oldContent = oldContent + line + System.lineSeparator();
@@ -142,12 +143,12 @@ public class AWS_Scrape {
 			}
 			// remove/reformat special chars for better parsing
 			String newContent = oldContent.replaceAll("~~", " ").replaceAll("~", " ").replaceAll("±", "").replace(" •", ",").replace(" |", ",");
-			for(HashMap.Entry<String, String> entry : abbreviations.entrySet()) {
+			for (HashMap.Entry<String, String> entry : abbreviations.entrySet()) {
 				//replace full state names with abbreviations for regex matching (e.g. "florida" -> "FL")
-				newContent = newContent.replaceFirst(entry.getKey(), entry.getValue());
+				newContent = newContent.replaceAll(entry.getKey(), entry.getValue());
 			}
 			writer2 = new FileWriter(output_txt);
-			writer2.write(newContent+" ");
+			writer2.write(newContent+" * ");
 		}catch (IOException e) {
 			e.printStackTrace();
 		}finally {
@@ -200,23 +201,26 @@ public class AWS_Scrape {
 			bufferreader = new BufferedReader(new FileReader(txt_input));
 			String line, previous_line;
 			line = previous_line = "";
-			boolean found_lease_term, found_sale_term;
-			found_lease_term = found_sale_term = false;
 			while ((line = bufferreader.readLine()) != null) {
 				String last_token = "";
 				ws.addLexItems(line);
-				if (addresses.isEmpty() && (line.matches("[a-zA-Z'@ ]*[,][ ][A-Za-z]{2}?") || line.matches("[a-zA-Z'@ ]*[,][ ][A-Za-z]{2}[ ][0-9]{5}.*"))){
+				if (addresses.isEmpty() && (line.matches("[a-zA-Z'@ ]*[,][ ][A-Za-z]{2}([ ].*|[.])?") || line.matches("[a-zA-Z'@ ]*[,][ ][A-Za-z]{2}[ ][0-9]{5}.*"))) {
 					// match ADDRESSES like "Orlando, FL" or "Round Rock, ca 91711" (with street address on the previous line)
-					if(!previous_line.contains("suite") && !previous_line.contains("floor") && !line.contains("suite") && !previous_line.contains("floor")) {
-						//avoid matching the office address
-						if(line.length() < 30) {
-							addresses.add((previous_line + ", " + line).replace("'", ""));
+					if (!(previous_line.contains("suite") || previous_line.contains("floor") || line.contains("suite") || line.contains("floor"))) {
+						//avoid address with "suite" or "floor", usaully the office address
+						if (line.length() < 35) {
+							//avoid matching random text, identified by long lines
+							if (previous_line.length() < 35) {
+								addresses.add((previous_line + ", " + line).replace("'", ""));
+							} else {
+								addresses.add(line.replace("'", ""));
+							}
 						}
 					}
 				}else if (addresses.isEmpty() && (line.matches(".*[,][ ][A-Za-z]{2}([ ].*|[.])?") || line.matches(".*[,][ ][A-Za-z]{2}[ ][0-9]{5}.*"))) {
 					// match ADDRESSES like "222 W Avenida Valencia, Orlando, FL" or "222 W Avenida Valencia, Round Rock, TX"
-					if(!previous_line.contains("suite") && !previous_line.contains("floor") && !line.contains("suite") && !previous_line.contains("floor")) {
-						if(line.length() < 50) {
+					if (!(line.contains("suite") || line.contains("floor"))) {
+						if (line.length() < 70) {
 							addresses.add(line.replace("'", ""));
 						}
 					}	
@@ -228,11 +232,9 @@ public class AWS_Scrape {
 						if (terms.isEmpty() && (token.toLowerCase().equals("lease") || token.toLowerCase().equals("leased"))) {
 							// match LEASE TERMS of the property
 							terms.add("Lease");
-							found_lease_term = true;
 						} else if (terms.isEmpty() && token.toLowerCase().equals("sale")) {
 							// match SALE TERMS of the property
 							terms.add("Sale");
-							found_sale_term = true;
 						} else if (token.matches("([a-zA-Z0-9]+[.])*[a-zA-Z0-9]+[@][a-zA-Z0-9]+.*") && !emails.contains(token)) {
 							// match EMAILS
 							emails.add(token);
@@ -249,9 +251,10 @@ public class AWS_Scrape {
 							}
 						} else if (token.matches("[0-9]{3}[.][0-9]{3}[.][0-9]{4}.*")) {
 							// match PHONE NUMBERS like "425.241.7707"
-							String phone_number = token.replace(".", "-");
-							if(!phone_nums.contains(phone_number)){
-								phone_nums.add(phone_number.substring(0, 12));
+							String phone_number = token.replace(".", "-").replace(",", "");
+							if (!phone_nums.contains(phone_number)) {
+								phone_nums.add(phone_number);
+
 							}
 						} else if (token.matches("[0-9]{3}[-][0-9]{3}[-][0-9]{4}.*") && !phone_nums.contains(token)) {
 							// match PHONE NUMBERS like "425-241-7707" or "425-341-7707,"
@@ -271,19 +274,20 @@ public class AWS_Scrape {
 				}
 				previous_line = line;
 			}
-			if(!addresses.isEmpty()) {
+			if (!addresses.isEmpty()) {
 				HashMap<String, String> geocoded_info = geocoder.getGeocodedInfo(addresses.get(0));
-				if(geocoded_info != null) {
+				if (geocoded_info != null) {
 					geocoded_address.add(geocoded_info.get("address").replaceAll("\"", ""));
 					latitude.add(geocoded_info.get("latitude"));
 					longitude.add(geocoded_info.get("longitude"));
-				}else {
+				} else {
 					addresses.remove(0);
 					addresses.add("**Unknown**");
+					geocoded_address.add("**Unknown**");
 					latitude.add("**Unknown**");
 					longitude.add("**Unknown**");
 				}
-			}else {
+			} else {
 //				AWS_Wrapper.alertNoAddress();
 				addresses.add("**Unknown**");
 				geocoded_address.add("**Unknown**");
@@ -292,10 +296,6 @@ public class AWS_Scrape {
 			}
 			if (terms.isEmpty()) {
 				terms.add("**Unknown**");
-			}else if (found_lease_term & found_sale_term) {
-				terms.remove("Lease");
-				terms.remove("Sale");
-				terms.add("Both");
 			}
 			if (square_footages.isEmpty()) {
 				square_footages.add("**Unknown**");
@@ -348,9 +348,9 @@ public class AWS_Scrape {
 			line = entry = token = last_token = "";
 			boolean has_period, found_contact;
 			has_period = found_contact = false;
-			if(emails.get(0).equals("**Unknown**")) {
+			if (emails.get(0).equals("**Unknown**")) {
 				contacts.add("**Unknown**");
-			}else {
+			} else {
 				for (String email : emails) {
 					//isolate the name from the email address ("zackross@..." -> "zackross")
 					String search_name = email.substring(0, email.indexOf("@")).toLowerCase();
@@ -381,6 +381,7 @@ public class AWS_Scrape {
 									entry = last_token.substring(0, 1).toUpperCase() + last_token.substring(1).toLowerCase()
 											+ " " + token.substring(0, 1).toUpperCase() + token.substring(1).toLowerCase();
 									if (entry.contains("@")) {
+										//handle case where email is found, just return the username
 										entry = entry.substring(entry.indexOf(0), entry.indexOf("@"));
 									}
 									contacts.add(entry);
@@ -422,12 +423,19 @@ public class AWS_Scrape {
 	 * @throws IOException
 	 */
 	public static File resultsToJson(HashMap<String, ArrayList<String>> results){
-		File json_output = AWS_Wrapper.createTmp("output", ".json");
+//		File json_output = AWS_Wrapper.createTmp("output", ".json");
+		File json_output = new File (output_file_path+TestOutput.input_pdf_name+".json");
+		try {
+			json_output.createNewFile();
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 		JSONObject file_object = new JSONObject();
-		for(String criteria : property_criteria) {
-			if(criteria.equals("Emails") || criteria.equals("Phone Numbers") || criteria.equals("Contact Names")) {
+		for (String criteria : property_criteria) {
+			if (criteria.equals("Emails") || criteria.equals("Phone Numbers") || criteria.equals("Contact Names")) {
 				JSONArray list = new JSONArray();
-				for(String result : results.get(criteria)) {
+				for (String result : results.get(criteria)) {
 					list.add(result);
 				}
 				file_object.put(criteria, list);
@@ -446,7 +454,7 @@ public class AWS_Scrape {
 		} catch (IOException e) {
 			e.printStackTrace();
 		} finally {
-			if(filew != null) {
+			if (filew != null) {
 				try {
 					filew.close();
 				} catch (IOException e) {

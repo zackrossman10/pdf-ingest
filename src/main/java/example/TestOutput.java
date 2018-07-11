@@ -24,7 +24,7 @@ public class TestOutput {
 
 	
 	public static void main(String[] args) {
-		//scrape the working set
+//		scrapeDirectory("/Users/zacharycolerossman/Documents/ML_Flyer_Data/Edge/");
 		scrapeDirectory("/Users/zacharycolerossman/Documents/ML_Flyer_Data/Complete_Test_Set/");
 	}
 	

@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
@@ -230,27 +232,28 @@ public class AWS_Scrape {
 				line = line.replaceAll(" "," ");
 				String last_token = "";
 				ws.addLexItems(line);
-				if (addresses.isEmpty() && (line.matches("[a-zA-Z'@ ]*, [a-zA-Z]{2}( .*|[.])?"))) {
-					
-					// match ADDRESSES like "Orlando, FL" or "Round Rock, ca 91711" (with street address on the previous line)
-					if (!(previous_line.contains("suite") || previous_line.contains("floor") || line.contains("suite") || line.contains("floor"))) {
-						//avoid address with "suite" or "floor", usaully the office address
-						if (line.length() < 35) {
-							//avoid matching random text by limiting line length
-							if (previous_line.length() < 35) {
-								addresses.add((previous_line + ", " + line).toLowerCase());
-							} else {
-								addresses.add(line.toLowerCase());
+				if (addresses.isEmpty()) {
+					if(line.matches("[a-zA-Z'@ ]*, [a-zA-Z]{2}( .*|[.])?")) {
+						// match ADDRESSES like "Orlando, FL" or "Round Rock, ca 91711" (with street address on the previous line)
+						if (!(previous_line.contains("suite") || previous_line.contains("floor") || line.contains("suite") || line.contains("floor"))) {
+							//avoid address with "suite" or "floor", usaully the office address
+							if (line.length() < 35) {
+								//avoid matching random text by limiting line length
+								if (previous_line.length() < 35) {
+									addresses.add((previous_line + ", " + line).toLowerCase());
+								} else {
+									addresses.add(line.toLowerCase());
+								}
 							}
 						}
+					}else if (line.matches(".*, [a-zA-Z]{2}( .*|[.])?")) {
+						// match ADDRESSES like "222 W Avenida Valencia, Orlando, FL" or "222 W Avenida Valencia, Round Rock, TX"
+						if (!(line.contains("suite") || line.contains("floor"))) {
+							if (line.length() < 70) {
+								addresses.add(line.toLowerCase());
+							}
+						}	
 					}
-				}else if (addresses.isEmpty() && (line.matches(".*, [a-zA-Z]{2}( .*|[.])?"))) {
-					// match ADDRESSES like "222 W Avenida Valencia, Orlando, FL" or "222 W Avenida Valencia, Round Rock, TX"
-					if (!(line.contains("suite") || line.contains("floor"))) {
-						if (line.length() < 70) {
-							addresses.add(line.toLowerCase());
-						}
-					}	
 				}
 				while (ws.hasMoreTokens()) {
 					// surround with try/catch to protect against weird character replacement/parsing issue
@@ -303,7 +306,8 @@ public class AWS_Scrape {
 			}
 			if (!addresses.isEmpty()) {
 				HashMap<String, String> geocoded_info = geocoder.getGeocodedInfo(addresses.get(0));
-				if (geocoded_info != null) {
+				if (geocoded_info.get("address") != null) {
+					System.out.println(geocoded_info.get("address"));
 					geocoded_address.add(geocoded_info.get("address").replace("\\u0026", "&").replace("\\u0027", "'").replaceAll("\"", ""));
 					latitude.add(geocoded_info.get("latitude"));
 					longitude.add(geocoded_info.get("longitude"));
@@ -311,10 +315,10 @@ public class AWS_Scrape {
 					lev_distance.add(geocoded_info.get("lev_distance"));
 				} else {
 					addresses.remove(0);
-					addresses.add("**Unknown**");
-					geocoded_address.add("**Unknown**");
-					latitude.add("**Unknown**");
-					longitude.add("**Unknown**");
+					addresses.add("**INACCURATE**");
+					geocoded_address.add("*INACCURATE**");
+					latitude.add("**INACCURATE**");
+					longitude.add("**INACCURATE**");
 				}
 			} else {
 //				AWS_Wrapper.alertNoAddress();

@@ -19,6 +19,8 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.json.simple.JSONArray;
@@ -27,9 +29,13 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import com.google.maps.GeocodingApi;
+import com.google.maps.errors.ApiException;
+import com.google.maps.model.AddressComponentType;
+import com.google.maps.model.GeocodingResult;
 
 public class AWS_Scrape {
-	public static final String[] property_criteria   = {"Address", "Geocoded Address", "Latitude", "Longitude", "Term", "Square Footage", "Emails", "Phone Numbers", "Contact Names"};
+	public static final String[] property_criteria   = {"Address", "Geocoded Address", "Score", "Latitude", "Longitude", "Type", "Term", "Square Footage", "Emails", "Phone Numbers", "Contact Names"};
 	public static final HashMap<String, String> abbreviations = new HashMap<String, String>(){{
 		put("alabama", "AL");
 		put("alaska", "AK");
@@ -94,8 +100,9 @@ public class AWS_Scrape {
 	 * @return a .json file containing the results
 	 */
 	public static File scrape(File input) {
-		File txt_output = PDFToTxt(input);
-		HashMap<String, ArrayList<String>> data = scrapeTxt(txt_output);
+		File messy_txt = PDFToTxt(input);
+		File clean_txt = cleanTxt(messy_txt);
+		HashMap<String, ArrayList<String>> data = scrapeTxt(clean_txt);
 		return resultsToJson(data);
 	}
 	
@@ -103,17 +110,13 @@ public class AWS_Scrape {
 	 * Use PDFBox to extract text from a PDF, write to a txt file
 	 * @param input PDF file to scrape
 	 * @return txt file which contains PDF text
-	 * @throws IOException 
 	 */
 	public static File PDFToTxt(File input) {
 //		File output_txt = AWS_Wrapper.createTmp("output", ".txt");
 		File output_txt = new File(TestOutput.output_file_path+TestOutput.input_pdf_name+".txt");
 		PDDocument document = null;
 		FileWriter writer = null;
-		FileWriter writer2 = null;
-		BufferedReader bufferreader = null;
 		try {
-			// 1) TRANSLATE PDF TO TXT DOC
 			PDFTextStripper pdfStripper = new PDFTextStripper();
 			document = PDDocument.load(input);
 			String pdf_text = pdfStripper.getText(document);
@@ -121,11 +124,37 @@ public class AWS_Scrape {
 			//pdf text parses better when spaces replaced with special char "~", will be
 			pdf_text = pdf_text.replace(" ", "~");
 			writer.write(pdf_text);
-			//must close this writer before opening writer2
-			writer.close();
-			
-			// 2) REFORMAT NEW TXT DOC FOR BETTER PARSING
-			bufferreader = new BufferedReader(new FileReader(output_txt));
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			if (document != null) {
+				try {
+					document.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+			if(writer != null) {
+				try {
+					writer.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		return output_txt;
+	}
+	
+	/**
+	 * Clean up a txt file, prepare for parsing
+	 * @param input txt file to clean up
+	 * @return clean txt file ready for parsing
+	 */
+	public static File cleanTxt(File messy_txt) {
+		FileWriter writer2 = null;
+		BufferedReader bufferreader = null;
+		try {
+			bufferreader = new BufferedReader(new FileReader(messy_txt));
 			String oldContent = "";
 			String line = bufferreader.readLine();
 			while (line != null) {
@@ -147,18 +176,11 @@ public class AWS_Scrape {
 				//replace full state names with abbreviations for regex matching (e.g. "florida" -> "FL")
 				newContent = newContent.replaceAll(entry.getKey(), entry.getValue());
 			}
-			writer2 = new FileWriter(output_txt);
-			writer2.write(newContent+" * ");
-		}catch (IOException e) {
+			writer2 = new FileWriter(messy_txt);
+			writer2.write(newContent+" ");
+		} catch (IOException e) {
 			e.printStackTrace();
-		}finally {
-			if (document != null) {
-				try {
-					document.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
+		} finally {
 			if (bufferreader != null) {
 				try {
 					bufferreader.close();
@@ -174,7 +196,7 @@ public class AWS_Scrape {
 				}
 			}
 		}
-		return output_txt;
+		return messy_txt;
 	}
 
 	/**
@@ -190,6 +212,8 @@ public class AWS_Scrape {
 		ArrayList<String> geocoded_address = new ArrayList<String>();
 		ArrayList<String> latitude 		   = new ArrayList<String>();
 		ArrayList<String> longitude 	   = new ArrayList<String>();
+		ArrayList<String> address_type 	   = new ArrayList<String>();
+		ArrayList<String> lev_distance 	   = new ArrayList<String>();
 		ArrayList<String> terms 		   = new ArrayList<String>();
 		ArrayList<String> emails 		   = new ArrayList<String>();
 		ArrayList<String> square_footages  = new ArrayList<String>();
@@ -202,26 +226,29 @@ public class AWS_Scrape {
 			String line, previous_line;
 			line = previous_line = "";
 			while ((line = bufferreader.readLine()) != null) {
+				//replace all horizontal whitespace chars with spaces for regex matching
+				line = line.replaceAll(" "," ");
 				String last_token = "";
 				ws.addLexItems(line);
-				if (addresses.isEmpty() && (line.matches("[a-zA-Z'@ ]*[,][ ][A-Za-z]{2}([ ].*|[.])?") || line.matches("[a-zA-Z'@ ]*[,][ ][A-Za-z]{2}[ ][0-9]{5}.*"))) {
+				if (addresses.isEmpty() && (line.matches("[a-zA-Z'@ ]*, [a-zA-Z]{2}( .*|[.])?"))) {
+					
 					// match ADDRESSES like "Orlando, FL" or "Round Rock, ca 91711" (with street address on the previous line)
 					if (!(previous_line.contains("suite") || previous_line.contains("floor") || line.contains("suite") || line.contains("floor"))) {
 						//avoid address with "suite" or "floor", usaully the office address
 						if (line.length() < 35) {
-							//avoid matching random text, identified by long lines
+							//avoid matching random text by limiting line length
 							if (previous_line.length() < 35) {
-								addresses.add((previous_line + ", " + line).replace("'", ""));
+								addresses.add((previous_line + ", " + line).toLowerCase());
 							} else {
-								addresses.add(line.replace("'", ""));
+								addresses.add(line.toLowerCase());
 							}
 						}
 					}
-				}else if (addresses.isEmpty() && (line.matches(".*[,][ ][A-Za-z]{2}([ ].*|[.])?") || line.matches(".*[,][ ][A-Za-z]{2}[ ][0-9]{5}.*"))) {
+				}else if (addresses.isEmpty() && (line.matches(".*, [a-zA-Z]{2}( .*|[.])?"))) {
 					// match ADDRESSES like "222 W Avenida Valencia, Orlando, FL" or "222 W Avenida Valencia, Round Rock, TX"
 					if (!(line.contains("suite") || line.contains("floor"))) {
 						if (line.length() < 70) {
-							addresses.add(line.replace("'", ""));
+							addresses.add(line.toLowerCase());
 						}
 					}	
 				}
@@ -235,7 +262,7 @@ public class AWS_Scrape {
 						} else if (terms.isEmpty() && token.toLowerCase().equals("sale")) {
 							// match SALE TERMS of the property
 							terms.add("Sale");
-						} else if (token.matches("([a-zA-Z0-9]+[.])*[a-zA-Z0-9]+[@][a-zA-Z0-9]+.*") && !emails.contains(token)) {
+						} else if (token.matches("([a-zA-Z0-9]+[.])*[a-zA-Z0-9]+@[a-zA-Z0-9]+.*") && !emails.contains(token)) {
 							// match EMAILS
 							emails.add(token);
 						} else if (square_footages.isEmpty() && (token.toLowerCase().equals("sf") || token.toLowerCase().equals("square"))) {
@@ -249,21 +276,21 @@ public class AWS_Scrape {
 							if (!phone_nums.contains(phone_number)) {
 								phone_nums.add(phone_number);
 							}
-						} else if (token.matches("[0-9]{3}[.][0-9]{3}[.][0-9]{4}.*")) {
+						} else if (token.matches("([+]1[.])?[0-9]{3}[.][0-9]{3}[.][0-9]{4}.*")) {
 							// match PHONE NUMBERS like "425.241.7707"
 							String phone_number = token.replace(".", "-").replace(",", "");
 							if (!phone_nums.contains(phone_number)) {
 								phone_nums.add(phone_number);
 
 							}
-						} else if (token.matches("[0-9]{3}[-][0-9]{3}[-][0-9]{4}.*") && !phone_nums.contains(token)) {
+						} else if (token.matches("[0-9]{3}-[0-9]{3}-[0-9]{4}.*") && !phone_nums.contains(token)) {
 							// match PHONE NUMBERS like "425-241-7707" or "425-341-7707,"
 							phone_nums.add(token);
 						} else if (token.matches("[(][0-9]{3}[)]") && ws.hasMoreTokens()) {
 							// match PHONE NUMBERS like "(425) 241-7707" or "(425) 241-7707."
 							String the_rest = ws.nextToken();
 							String phone_number = token.substring(1, 4) + "-" + the_rest;
-							if (the_rest.matches("[0-9]{3}[-][0-9]{4}.*") && !phone_nums.contains(phone_number)) {
+							if (the_rest.matches("[0-9]{3}-[0-9]{4}.*") && !phone_nums.contains(phone_number)) {
 								phone_nums.add(phone_number);
 							}
 						}
@@ -277,9 +304,11 @@ public class AWS_Scrape {
 			if (!addresses.isEmpty()) {
 				HashMap<String, String> geocoded_info = geocoder.getGeocodedInfo(addresses.get(0));
 				if (geocoded_info != null) {
-					geocoded_address.add(geocoded_info.get("address").replaceAll("\"", ""));
+					geocoded_address.add(geocoded_info.get("address").replace("\\u0026", "&").replace("\\u0027", "'").replaceAll("\"", ""));
 					latitude.add(geocoded_info.get("latitude"));
 					longitude.add(geocoded_info.get("longitude"));
+					address_type.add(geocoded_info.get("type"));
+					lev_distance.add(geocoded_info.get("lev_distance"));
 				} else {
 					addresses.remove(0);
 					addresses.add("**Unknown**");
@@ -310,6 +339,8 @@ public class AWS_Scrape {
 			property_data.put("Geocoded Address", geocoded_address);	
 			property_data.put("Latitude", latitude);	
 			property_data.put("Longitude", longitude);	
+			property_data.put("Lev_Distance", lev_distance);	
+			property_data.put("Type", address_type);
 			property_data.put("Term", terms);	
 			property_data.put("Square Footage", square_footages);	
 			property_data.put("Emails", emails);	
@@ -420,7 +451,7 @@ public class AWS_Scrape {
 	 * Format the scraped information from all PDFs into one new .json file
 	 * @param results contains the property data for every pdf file processed
 	 * @param input_pdf_names -> arraylist of names of pdfs that were scraped
-	 * @throws IOException
+	 * @return json file containing property information
 	 */
 	public static File resultsToJson(HashMap<String, ArrayList<String>> results){
 //		File json_output = AWS_Wrapper.createTmp("output", ".json");
@@ -428,7 +459,6 @@ public class AWS_Scrape {
 		try {
 			json_output.createNewFile();
 		} catch (IOException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
 		JSONObject file_object = new JSONObject();

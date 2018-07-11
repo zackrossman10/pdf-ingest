@@ -35,7 +35,7 @@ public class AWS_Wrapper implements RequestHandler<Map<String, Map<String, Objec
 	public static final AmazonS3 s3Client = AmazonS3ClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(awsCreds)).withRegion(Regions.US_EAST_1).build();
 	public static String input_name;
 	
-	//Simple testing code
+	//simple aws testing code
 	public static void main(String[] args) {
 		File temp_pdf_file = createTmp("flyer", ".pdf");
 	    if(s3Client.doesObjectExist(s3_input_bucket, "ki")) {
@@ -47,7 +47,7 @@ public class AWS_Wrapper implements RequestHandler<Map<String, Map<String, Objec
 	 * Main function called by the lambda function
 	 * Facilitates scraping of PDF and returning of JSON output
 	 * @param input the Message passed in by SQS
-	 * @param context idk?
+	 * @param AWS context ??
 	 */
 	public String handleRequest(Map<String, Map<String, Object>[]> input, Context context) {
 		String body = (String) input.get("Records")[0].get("body");

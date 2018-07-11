@@ -48,14 +48,19 @@ public class TestOutput {
 		return input_file_names;
 	}
 	
+	/**
+	 * scrape all of the PDFs in a local directory
+	 * @param directory path to directory
+	 */
 	public static void scrapeDirectory(String directory) {
 		ArrayList<String> input_pdf_names = getInputFilenames(new File(directory));
 		for(String pdf_name : input_pdf_names) {
 			System.out.println(pdf_name);
 			input_pdf_name = pdf_name;
 			File file = new File(directory+pdf_name);
-			File txt_output = AWS_Scrape.PDFToTxt(file);
-			HashMap<String, ArrayList<String>> property_data = AWS_Scrape.scrapeTxt(txt_output);
+			File messy_txt = AWS_Scrape.PDFToTxt(file);
+			File clean_txt = AWS_Scrape.cleanTxt(messy_txt);
+			HashMap<String, ArrayList<String>> property_data = AWS_Scrape.scrapeTxt(clean_txt);
 			resultsToCsv(property_data);
 //			AWS_Scrape.resultsToJson(property_data);
 		}
@@ -65,9 +70,8 @@ public class TestOutput {
 	 * Load the scraped information from all PDFs into one new .csv file
 	 * @param results contains the property data for every pdf file processed
 	 * @param input_pdf_names -> arraylist of names of pdfs that were scraped
-	 * @throws IOException
 	 */
-	public static void resultsToCsv(HashMap<String, ArrayList<String>> results){
+	public static void resultsToCsv(HashMap<String, ArrayList<String>> results) {
 		File output_csv = new File(output_file_path+"output.csv");
 		StringBuilder sb = new StringBuilder();
 		FileWriter pw = null;
@@ -75,7 +79,7 @@ public class TestOutput {
 			if(!output_csv.exists()) {
 				output_csv.createNewFile();
 				pw = new FileWriter(new File(output_file_path+"output.csv"), true);
-				sb.append("PDFName, Scraped Address, Geocoded Address, Latitude, Term, Emails, Longitude, Phone Numbers, Square Footage, Contact Names\n");
+				sb.append("PDFName, Type, Lev_Distance, Scraped Address, Geocoded Address, Latitude, Term, Emails, Longitude, Phone Numbers, Square Footage, Contact Names\n");
 			}else {
 				pw = new FileWriter(new File(output_file_path+"output.csv"), true);
 			}

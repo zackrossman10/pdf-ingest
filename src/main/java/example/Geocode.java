@@ -79,7 +79,7 @@ public class Geocode {
 	    }else {
 	    	scraped_end_index = scraped_addr.length();
 	    }    
-	    if(geo_matcher.find()) {
+	    if (geo_matcher.find()) {
 	    	geo_index = geo_matcher.end();
 	    }else {
 	    	geo_index = geo_addr.length();

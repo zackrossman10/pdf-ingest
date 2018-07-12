@@ -15,13 +15,9 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
@@ -31,10 +27,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-import com.google.maps.GeocodingApi;
-import com.google.maps.errors.ApiException;
-import com.google.maps.model.AddressComponentType;
-import com.google.maps.model.GeocodingResult;
 
 public class AWS_Scrape {
 	public static final String[] property_criteria   = {"Address", "Geocoded Address", "Score", "Latitude", "Longitude", "Type", "Term", "Square Footage", "Emails", "Phone Numbers", "Contact Names"};
@@ -173,7 +165,7 @@ public class AWS_Scrape {
 				line = bufferreader.readLine();
 			}
 			// remove/reformat special chars for better parsing
-			String newContent = oldContent.replaceAll("~~", " ").replaceAll("~", " ").replaceAll("±", "").replace(" •", ",").replace(" |", ",");
+			String newContent = oldContent.replaceAll("~~", " ").replaceAll("~", " ").replace(" •", ",").replace(" |", ",");
 			for (HashMap.Entry<String, String> entry : abbreviations.entrySet()) {
 				//replace full state names with abbreviations for regex matching (e.g. "florida" -> "FL")
 				newContent = newContent.replaceAll(entry.getKey(), entry.getValue());
@@ -233,16 +225,16 @@ public class AWS_Scrape {
 				String last_token = "";
 				ws.addLexItems(line);
 				if (addresses.isEmpty()) {
-					if(line.matches("[a-zA-Z'@ ]*, [a-zA-Z]{2}( .*|[.])?")) {
+					if (line.matches("[a-zA-Z'@ ]*, [a-zA-Z]{2}( .*|[.])?")) {
 						// match ADDRESSES like "Orlando, FL" or "Round Rock, ca 91711" (with street address on the previous line)
 						if (!(previous_line.contains("suite") || previous_line.contains("floor") || line.contains("suite") || line.contains("floor"))) {
 							//avoid address with "suite" or "floor", usaully the office address
 							if (line.length() < 35) {
 								//avoid matching random text by limiting line length
 								if (previous_line.length() < 35) {
-									addresses.add((previous_line + ", " + line).replace(" - ", "-").replace("street", "st").toLowerCase());
+									addresses.add((previous_line + ", " + line));
 								} else {
-									addresses.add(line.replace(" - ", "-").replace("street", "st").toLowerCase());
+									addresses.add(line);
 								}
 							}
 						}
@@ -250,7 +242,7 @@ public class AWS_Scrape {
 						// match ADDRESSES like "222 W Avenida Valencia, Orlando, FL" or "222 W Avenida Valencia, Round Rock, TX"
 						if (!(line.contains("suite") || line.contains("floor"))) {
 							if (line.length() < 70) {
-								addresses.add(line.replace(" - ", "-").replace("street", "st").toLowerCase());
+								addresses.add(line);
 							}
 						}	
 					}
@@ -268,10 +260,21 @@ public class AWS_Scrape {
 						} else if (token.matches("([a-zA-Z0-9]+[.])*[a-zA-Z0-9]+@[a-zA-Z0-9]+.*") && !emails.contains(token)) {
 							// match EMAILS
 							emails.add(token);
-						} else if (square_footages.isEmpty() && (token.toLowerCase().equals("sf") || token.toLowerCase().equals("square"))) {
-							// match SQUARE FOOTAGES like "1,000,000", "1000000" ("1,00,00 or 1000,0 -> fail)
-							if (last_token.matches("^(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?$")) {
-								square_footages.add(last_token);
+						} else if (square_footages.isEmpty()) {
+							token = token.toLowerCase();
+							if(token.matches("s[.]?f[.]?") || token.matches("sq[.||ft]?") || token.equals("square") || token.contains("ft.*") || token.equals("±")){
+								//match segments like "4,500 sf" or "4,500 square feet"
+								if (last_token.matches(".*(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[*]?[±||+/-]?")) {
+									// match SQUARE FOOTAGES like "1,000,000", "1000000" ("1,00,00 or 1000,0 -> fail)
+									square_footages.add(last_token.replace("±", ""));
+								}
+							}else if ((token.matches("feet[:]?") || token.matches("±")) && ws.hasMoreTokens()) {
+								//match segments like "square feet: 4,500" or "± 4,500"
+								String next = ws.nextToken();
+								System.out.println(next);
+								if (next.matches("^(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[*]?")) {
+									square_footages.add(next.replaceAll("±", ""));
+								}	
 							}
 						} else if (token.matches("[0-9]{3}") && last_token.matches("[0-9]{3}") && ws.hasMoreTokens()) {
 							// match PHONE NUMBERS like "425 241 7707"
@@ -305,11 +308,13 @@ public class AWS_Scrape {
 				previous_line = line;
 			}
 			if (!addresses.isEmpty()) {
-				String clean_entry = addresses.get(0);
+				//normalize address strings to for better consistency with geocoder
+				String clean_entry = addresses.get(0).replace(" - ", "-").replace(" – ", "-").replace("–", "-").replace("street", "st").toLowerCase();
 			    //translate addresses like "919-920 bath st." to "919 bath st." for better geocoder matching
 			    if(clean_entry.matches("[0-9]*-[0-9]* .*")){
+			    	//CANNOT BE AN OFFICE ADDRESS
+			    	//IF IN RESIDENTIAL, CANNOT BE OFFICE ADDRESS
 			    	clean_entry = clean_entry.substring(0, clean_entry.indexOf("-")) + clean_entry.substring(clean_entry.indexOf(" "));
-			    	System.out.println("*********"+clean_entry);
 			    }
 				HashMap<String, String> geocoded_info = geocoder.getGeocodedInfo(clean_entry);
 				if (geocoded_info.get("address") != null) {

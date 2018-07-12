@@ -38,6 +38,7 @@ public class Geocode {
 	 * @return a Hashmap containing an address, latitude, and longitude supplied by Google Maps API
 	 */
 	public HashMap<String, String> getGeocodedInfo(String scraped_address) {
+		//if map is not cleared, failed geocode requests will return the last successful address
 		map.clear();
 		try {	
 			GeocodingResult[] results = GeocodingApi.geocode(context, scraped_address).await();

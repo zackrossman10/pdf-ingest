@@ -240,9 +240,9 @@ public class AWS_Scrape {
 							if (line.length() < 35) {
 								//avoid matching random text by limiting line length
 								if (previous_line.length() < 35) {
-									addresses.add((previous_line + ", " + line).toLowerCase());
+									addresses.add((previous_line + ", " + line).replace(" - ", "-").replace("street", "st").toLowerCase());
 								} else {
-									addresses.add(line.toLowerCase());
+									addresses.add(line.replace(" - ", "-").replace("street", "st").toLowerCase());
 								}
 							}
 						}
@@ -250,7 +250,7 @@ public class AWS_Scrape {
 						// match ADDRESSES like "222 W Avenida Valencia, Orlando, FL" or "222 W Avenida Valencia, Round Rock, TX"
 						if (!(line.contains("suite") || line.contains("floor"))) {
 							if (line.length() < 70) {
-								addresses.add(line.toLowerCase());
+								addresses.add(line.replace(" - ", "-").replace("street", "st").toLowerCase());
 							}
 						}	
 					}
@@ -307,7 +307,6 @@ public class AWS_Scrape {
 			if (!addresses.isEmpty()) {
 				String clean_entry = addresses.get(0);
 			    //translate addresses like "919-920 bath st." to "919 bath st." for better geocoder matching
-			    clean_entry = clean_entry.replace(" - ", "-").replace("street", "st");
 			    if(clean_entry.matches("[0-9]*-[0-9]* .*")){
 			    	clean_entry = clean_entry.substring(0, clean_entry.indexOf("-")) + clean_entry.substring(clean_entry.indexOf(" "));
 			    	System.out.println("*********"+clean_entry);

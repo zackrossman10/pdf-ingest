@@ -79,7 +79,7 @@ public class TestOutput {
 			if(!output_csv.exists()) {
 				output_csv.createNewFile();
 				pw = new FileWriter(new File(output_file_path+"output.csv"), true);
-				sb.append("PDFName, Type, Lev_Distance, Scraped Address, Geocoded Address, Latitude, Term, Emails, Longitude, Phone Numbers, Square Footage, Contact Names\n");
+				sb.append("PDFName, Type, Scraped Address, Lev Distance, Geocoded Address, Latitude, Term, Emails, Longitude, Phone Numbers, Square Footage, Contact Names\n");
 			}else {
 				pw = new FileWriter(new File(output_file_path+"output.csv"), true);
 			}

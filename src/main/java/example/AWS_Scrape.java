@@ -305,9 +305,15 @@ public class AWS_Scrape {
 				previous_line = line;
 			}
 			if (!addresses.isEmpty()) {
-				HashMap<String, String> geocoded_info = geocoder.getGeocodedInfo(addresses.get(0));
+				String clean_entry = addresses.get(0);
+			    //translate addresses like "919-920 bath st." to "919 bath st." for better geocoder matching
+			    clean_entry = clean_entry.replace(" - ", "-").replace("street", "st");
+			    if(clean_entry.matches("[0-9]*-[0-9]* .*")){
+			    	clean_entry = clean_entry.substring(0, clean_entry.indexOf("-")) + clean_entry.substring(clean_entry.indexOf(" "));
+			    	System.out.println("*********"+clean_entry);
+			    }
+				HashMap<String, String> geocoded_info = geocoder.getGeocodedInfo(clean_entry);
 				if (geocoded_info.get("address") != null) {
-					System.out.println(geocoded_info.get("address"));
 					geocoded_address.add(geocoded_info.get("address").replace("\\u0026", "&").replace("\\u0027", "'").replaceAll("\"", ""));
 					latitude.add(geocoded_info.get("latitude"));
 					longitude.add(geocoded_info.get("longitude"));

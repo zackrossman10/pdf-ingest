@@ -65,24 +65,27 @@ public class Geocode {
 	 * @return the calculated lev distance as a string
 	 */
 	public String getLevDistance(String scraped_addr, String geo_addr) {
+		//find indices for the state abbreviation in scraped_addr and geo_addr
+		//will be used to get more comparable substrings
 		Pattern scrape_pattern = Pattern.compile(".*, [a-zA-Z]{2}( |[.])?");
 	    Matcher scrape_matcher = scrape_pattern.matcher(scraped_addr);
 	    Pattern geo_pattern = Pattern.compile(", [A-Z]{2} ");
 	    Matcher geo_matcher = geo_pattern.matcher(geo_addr);
-	    int scraped_index;
+	    int scraped_end_index;
 	    int geo_index;
 	    if (scrape_matcher.find()) {
-	    	scraped_index = scrape_matcher.end();
+	    	scraped_end_index = scrape_matcher.end();
 	    }else {
-	    	scraped_index = scraped_addr.length();
-	    }
-	    
+	    	scraped_end_index = scraped_addr.length();
+	    }    
 	    if(geo_matcher.find()) {
 	    	geo_index = geo_matcher.end();
 	    }else {
 	    	geo_index = geo_addr.length();
 	    }
-		int lev_d = lev_distance.apply(scraped_addr.substring(0, scraped_index), geo_addr.substring(0, geo_index).toLowerCase());
+	    
+	    //find lev distance between the two modified address strings
+		int lev_d = lev_distance.apply(scraped_addr.substring(0, scraped_end_index), geo_addr.substring(0, geo_index).toLowerCase());
 		return Integer.toString(lev_d);	
 	}
 			

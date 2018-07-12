@@ -67,7 +67,7 @@ public class Geocode {
 	 */
 	public String getLevDistance(String scraped_addr, String geo_addr) {
 		//find indices for the state abbreviation in scraped_addr and geo_addr
-		//will be used to get more comparable substrings
+		//used to get more comparable substrings
 		Pattern scrape_pattern = Pattern.compile(".*, [a-zA-Z]{2}( |[.])?");
 	    Matcher scrape_matcher = scrape_pattern.matcher(scraped_addr);
 	    Pattern geo_pattern = Pattern.compile(", [A-Z]{2} ");

@@ -28,7 +28,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class AWS_Wrapper implements RequestHandler<Map<String, Map<String, Object>[]>, String>{
-	public static final BasicAWSCredentials awsCreds = new BasicAWSCredentials("AKIAJAJLIOLQVD7ISY2A", "I5PYK60FgacyWuRbnDpPCFmgnuFu7gJlppgmwQeY");
+	public static final BasicAWSCredentials awsCreds = new BasicAWSCredentials("", "");
 	public static final String s3_input_bucket = "flyerdata";
 	public static final String s3_output_bucket = "flyeroutput";
 	public static final String s3_no_address_bucket = "noaddress";

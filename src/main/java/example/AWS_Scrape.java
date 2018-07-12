@@ -106,8 +106,8 @@ public class AWS_Scrape {
 	 * @return txt file which contains PDF text
 	 */
 	public static File PDFToTxt(File input) {
-//		File output_txt = AWS_Wrapper.createTmp("output", ".txt");
-		File output_txt = new File(TestOutput.output_file_path+TestOutput.input_pdf_name+".txt");
+		File output_txt = AWS_Wrapper.createTmp("output", ".txt");
+//		File output_txt = new File(TestOutput.output_file_path+TestOutput.input_pdf_name+".txt");
 		PDDocument document = null;
 		FileWriter writer = null;
 		try {
@@ -164,7 +164,7 @@ public class AWS_Scrape {
 				oldContent = oldContent + line + System.lineSeparator();
 				line = bufferreader.readLine();
 			}
-			// remove/reformat special chars for better parsing
+			//reformat special chars for better parsing
 			String newContent = oldContent.replaceAll("~~", " ").replaceAll("~", " ").replace(" •", ",").replace(" |", ",");
 			for (HashMap.Entry<String, String> entry : abbreviations.entrySet()) {
 				//replace full state names with abbreviations for regex matching (e.g. "florida" -> "FL")
@@ -263,17 +263,15 @@ public class AWS_Scrape {
 						} else if (square_footages.isEmpty()) {
 							token = token.toLowerCase();
 							if(token.matches("s[.]?f[.]?") || token.matches("sq[.||ft]?") || token.equals("square") || token.contains("ft.*") || token.equals("±")){
-								//match segments like "4,500 sf" or "4,500 square feet"
-								if (last_token.matches(".*(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[*]?[±||+/-]?")) {
-									// match SQUARE FOOTAGES like "1,000,000", "1000000" ("1,00,00 or 1000,0 -> fail)
-									square_footages.add(last_token.replace("±", ""));
+								//match SQUARE FOOTAGES like "4,500 sf" or "4,500 square feet"
+								if (last_token.matches("[,±0-9/+//-]{3,}")) {
+									square_footages.add(last_token.replace("±", "").replace("+/-", ""));
 								}
-							}else if ((token.matches("feet[:]?") || token.matches("±")) && ws.hasMoreTokens()) {
-								//match segments like "square feet: 4,500" or "± 4,500"
+							}else if ((token.matches("feet[:]?") || token.matches("(±||(/+//-))")) && ws.hasMoreTokens()) {
+								//match SQUARE FOOTAGES like "square feet: 4,500" or "± 4,500"
 								String next = ws.nextToken();
-								System.out.println(next);
-								if (next.matches("^(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[*]?")) {
-									square_footages.add(next.replaceAll("±", ""));
+								if (next.matches("[,±0-9/+//-]{3,}")) {
+									square_footages.add(next.replace("±", "").replace("+/-", ""));
 								}	
 							}
 						} else if (token.matches("[0-9]{3}") && last_token.matches("[0-9]{3}") && ws.hasMoreTokens()) {
@@ -284,7 +282,7 @@ public class AWS_Scrape {
 							}
 						} else if (token.matches("([+]1[.])?[0-9]{3}[.][0-9]{3}[.][0-9]{4}.*")) {
 							// match PHONE NUMBERS like "425.241.7707"
-							String phone_number = token.replace(".", "-").replace(",", "");
+							String phone_number = token.replace(".", "-");
 							if (!phone_nums.contains(phone_number)) {
 								phone_nums.add(phone_number);
 
@@ -293,7 +291,7 @@ public class AWS_Scrape {
 							// match PHONE NUMBERS like "425-241-7707" or "425-341-7707,"
 							phone_nums.add(token);
 						} else if (token.matches("[(][0-9]{3}[)]") && ws.hasMoreTokens()) {
-							// match PHONE NUMBERS like "(425) 241-7707" or "(425) 241-7707."
+							// match PHONE NUMBERS like "(425) 241-7707"
 							String the_rest = ws.nextToken();
 							String phone_number = token.substring(1, 4) + "-" + the_rest;
 							if (the_rest.matches("[0-9]{3}-[0-9]{4}.*") && !phone_nums.contains(phone_number)) {
@@ -312,8 +310,6 @@ public class AWS_Scrape {
 				String clean_entry = addresses.get(0).replace(" - ", "-").replace(" – ", "-").replace("–", "-").replace("street", "st").toLowerCase();
 			    //translate addresses like "919-920 bath st." to "919 bath st." for better geocoder matching
 			    if(clean_entry.matches("[0-9]*-[0-9]* .*")){
-			    	//CANNOT BE AN OFFICE ADDRESS
-			    	//IF IN RESIDENTIAL, CANNOT BE OFFICE ADDRESS
 			    	clean_entry = clean_entry.substring(0, clean_entry.indexOf("-")) + clean_entry.substring(clean_entry.indexOf(" "));
 			    }
 				HashMap<String, String> geocoded_info = geocoder.getGeocodedInfo(clean_entry);
@@ -331,7 +327,6 @@ public class AWS_Scrape {
 					longitude.add("**INACCURATE**");
 				}
 			} else {
-//				AWS_Wrapper.alertNoAddress();
 				addresses.add("**Unknown**");
 				geocoded_address.add("**Unknown**");
 				latitude.add("**Unknown**");
@@ -411,6 +406,7 @@ public class AWS_Scrape {
 								token = ws.nextToken();
 								if (token.toLowerCase().contains(search_name) && ws.hasMoreTokens()) {
 									String last_name = ws.nextToken();
+									//format the name
 									entry = token.substring(0, 1).toUpperCase() + token.substring(1).toLowerCase() + " "
 											+ last_name.substring(0, 1).toUpperCase()
 											+ last_name.substring(1).toLowerCase();
@@ -468,8 +464,8 @@ public class AWS_Scrape {
 	 * @return json file containing property information
 	 */
 	public static File resultsToJson(HashMap<String, ArrayList<String>> results){
-//		File json_output = AWS_Wrapper.createTmp("output", ".json");
-		File json_output = new File (output_file_path+TestOutput.input_pdf_name+".json");
+		File json_output = AWS_Wrapper.createTmp("output", ".json");
+//		File json_output = new File (output_file_path+TestOutput.input_pdf_name+".json");
 		try {
 			json_output.createNewFile();
 		} catch (IOException e1) {

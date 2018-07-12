@@ -72,7 +72,6 @@ public class WordStream {
             throw new IndexOutOfBoundsException("out of tokens");
         }
     }
-    //AIzaSyBAv1vghEx5gdzH7vHo3OLZTlFB_vm1b7U
     
 //    /**
 //     * @return next token from list of lexical items that is not whitespace

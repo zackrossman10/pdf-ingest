@@ -32,7 +32,8 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class AWS_Wrapper implements RequestHandler<Map<String, Map<String, Object>[]>, String>{
-	public static BasicAWSCredentials awsCreds = new BasicAWSCredentials("", "");
+    public static Keys properties = new Keys();
+	public static BasicAWSCredentials awsCreds = new BasicAWSCredentials(properties.getKey("AWSAccessKeyId"), properties.getKey("AWSSecretKey"));
 	public static final String s3InputBucket = "flyerdata";
 	public static final String s3OutputBucket = "flyeroutput";
 	public static final String s3NoAddressBucket = "noaddress";
@@ -43,9 +44,10 @@ public class AWS_Wrapper implements RequestHandler<Map<String, Map<String, Objec
 	
 	//simple aws testing code
 	public static void main(String[] args) {
-//		File tempPdfFile = new File("/Users/zacharycolerossman/Documents/ML_Flyer_Data/Complete_Test_Set/_20151113 Lonetree.pdf");
-//		File jsonResult = AWS_Scrape.scrape(tempPdfFile);
-//	    s3Client.putObject(s3OutputBucket, "test.json", jsonResult); 
+	    System.out.println(properties.getKey("AWSAccessKeyId"));
+		File tempPdfFile = new File("/Users/zacharycolerossman/Documents/ML_Flyer_Data/Complete_Test_Set/_20151113 Lonetree.pdf");
+		File jsonResult = AWS_Scrape.scrape(tempPdfFile);
+	    s3Client.putObject(s3OutputBucket, "test.json", jsonResult); 
 	}
 	
 	/**

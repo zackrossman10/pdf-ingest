@@ -20,16 +20,16 @@ import java.util.regex.Pattern;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 
 public class Geocode {
+    public static Keys properties = new Keys();
     public GeoApiContext context;
     public Gson gson;
     public HashMap<String, String> map = new HashMap<String, String>();
-    public final String apiKey = "";
     public final String[] accurateTypes = { "STREET_NUMBER", "PREMISE", "SUBPREMISE", "INTERSECTION" };
     public final String[] approximateTypes = { "ROUTE", "LOCALITY", "POSTAL CODE", "NEIGHBORHOOD" };
     public LevenshteinDistance levDistance = new LevenshteinDistance();
 
     public Geocode() {
-        context = new GeoApiContext.Builder().apiKey(apiKey).build();
+        context = new GeoApiContext.Builder().apiKey(properties.getKey("GoogleAPI")).build();
         gson    = new GsonBuilder().setPrettyPrinting().create();
     }
 

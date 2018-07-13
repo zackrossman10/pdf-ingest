@@ -23,23 +23,29 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class AWS_Wrapper implements RequestHandler<Map<String, Map<String, Object>[]>, String>{
-	public static final BasicAWSCredentials awsCreds = new BasicAWSCredentials("AKIAJHKXWIYXC6HAQC3Q", "BCpwOrsyBDILovfeB+TnJiYBrF3rRwimnufCYFxR");
+	public static BasicAWSCredentials awsCreds = new BasicAWSCredentials("", "");
 	public static final String s3InputBucket = "flyerdata";
 	public static final String s3OutputBucket = "flyeroutput";
 	public static final String s3NoAddressBucket = "noaddress";
 	public static final AmazonS3 s3Client = AmazonS3ClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(awsCreds)).withRegion(Regions.US_EAST_1).build();
 	public static String inputName;
+    public static Geocode geocoder = new Geocode();
+
 	
 	//simple aws testing code
 	public static void main(String[] args) {
-		File tempPdfFile = new File("/Users/zacharycolerossman/Documents/ML_Flyer_Data/Complete_Test_Set/_20151113 Lonetree.pdf");
-		File jsonResult = AWS_Scrape.scrape(tempPdfFile);
-	    s3Client.putObject(s3OutputBucket, "test.json", jsonResult); 
+//		File tempPdfFile = new File("/Users/zacharycolerossman/Documents/ML_Flyer_Data/Complete_Test_Set/_20151113 Lonetree.pdf");
+//		File jsonResult = AWS_Scrape.scrape(tempPdfFile);
+//	    s3Client.putObject(s3OutputBucket, "test.json", jsonResult); 
 	}
 	
 	/**

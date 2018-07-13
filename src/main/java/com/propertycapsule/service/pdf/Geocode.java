@@ -23,7 +23,7 @@ public class Geocode {
     public GeoApiContext context;
     public Gson gson;
     public HashMap<String, String> map = new HashMap<String, String>();
-    public final String apiKey = "AIzaSyBAv1vghEx5gdzH7vHo3OLZTlFB_vm1b7U";
+    public final String apiKey = "";
     public final String[] accurateTypes = { "STREET_NUMBER", "PREMISE", "SUBPREMISE", "INTERSECTION" };
     public final String[] approximateTypes = { "ROUTE", "LOCALITY", "POSTAL CODE", "NEIGHBORHOOD" };
     public LevenshteinDistance levDistance = new LevenshteinDistance();

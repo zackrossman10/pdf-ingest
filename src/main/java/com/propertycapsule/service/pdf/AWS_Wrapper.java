@@ -41,10 +41,11 @@ public class AWS_Wrapper implements RequestHandler<Map<String, Map<String, Objec
 	public static String inputName;
     public static Geocode geocoder = new Geocode();
 
-	
+
 	//simple aws testing code
 	public static void main(String[] args) {
 	    System.out.println(properties.getKey("AWSAccessKeyId"));
+	    S3Object o = s3Client.getObject(s3InputBucket, "30-29th-Street-Brochure-08.23.16.pdf");
 		File tempPdfFile = new File("/Users/zacharycolerossman/Documents/ML_Flyer_Data/Complete_Test_Set/_20151113 Lonetree.pdf");
 		File jsonResult = AWS_Scrape.scrape(tempPdfFile);
 	    s3Client.putObject(s3OutputBucket, "test.json", jsonResult); 

@@ -3,4 +3,4 @@
 .classpath
 target
 .DS_Store
-.properties
+src/main/resources/*

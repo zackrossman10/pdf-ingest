@@ -11,23 +11,20 @@
 package com.propertycapsule.service.pdf;
 
 import com.amazonaws.AmazonServiceException;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.AWSCredentialsProviderChain;
 import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.regions.Regions;
+import com.amazonaws.auth.InstanceProfileCredentialsProvider;
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -39,9 +36,12 @@ public class AWS_Wrapper implements RequestHandler<Map<String, Map<String, Objec
     public static final String s3InputBucket = "flyerdata";
     public static final String s3OutputBucket = "flyeroutput";
     public static final String s3NoAddressBucket = "noaddress";
-    public static final AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
-            .withCredentials(new AWSStaticCredentialsProvider(awsCreds)).withRegion(Regions.US_EAST_1).build();
-    public static String inputName;
+    @SuppressWarnings("deprecation")
+    public static final AmazonS3Client s3Client = new AmazonS3Client(new AWSCredentialsProviderChain(
+            new InstanceProfileCredentialsProvider(),
+            new ProfileCredentialsProvider()));
+//    public static final AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
+//            .withCredentials(new AWSStaticCredentialsProvider(awsCreds)).withRegion(Regions.US_EAST_1).build();
     public static Geocode geocoder = new Geocode();
 
     // simple aws testing code
@@ -61,7 +61,7 @@ public class AWS_Wrapper implements RequestHandler<Map<String, Map<String, Objec
      * @param input
      *            the Message passed in by SQS
      * @param AWS
-     *            context ??
+     *            context passed by lambda function
      */
     public String handleRequest(Map<String, Map<String, Object>[]> input, Context context) {
         String body = (String) input.get("Records")[0].get("body");
@@ -72,7 +72,6 @@ public class AWS_Wrapper implements RequestHandler<Map<String, Map<String, Objec
         if(fileExtension.equals(".pdf")) {
             File tempPdfFile = createTmp("flyer", ".pdf");
             if(s3Client.doesObjectExist(s3InputBucket, s3InputKey)) {
-                inputName = s3InputKey;
                 writeObjToTmp(s3InputBucket, s3InputKey, tempPdfFile);
                 File jsonResult = AWS_Scrape.scrape(tempPdfFile);
                 String jsonOutputName = s3InputKey.substring(0, s3InputKey.length() - 4) + ".json";
@@ -144,13 +143,5 @@ public class AWS_Wrapper implements RequestHandler<Map<String, Map<String, Objec
             e.printStackTrace();
         }
         return output;
-    }
-
-    /**
-     * Put a placeholder doc in S3 to alert that no address was not found for
-     * the property
-     */
-    public static void alertNoAddress() {
-        s3Client.putObject(s3NoAddressBucket, inputName + "_ADDRESSNOTFOUND", createTmp("oops", ".txt"));
     }
 }

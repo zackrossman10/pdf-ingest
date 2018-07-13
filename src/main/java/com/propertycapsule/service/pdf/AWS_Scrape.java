@@ -16,7 +16,6 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -111,8 +110,6 @@ public class AWS_Scrape {
      */
     public static File pdfToTxt(File input) {
         File outputTxt = AWS_Wrapper.createTmp("output", ".txt");
-        // File outputTxt = new
-        // File(TestOutput.outputFilePath+TestOutput.inputPdfName+".txt");
         PDFTextStripper pdfStripper = null;
         PDDocument document = null;
         FileWriter writer = null;
@@ -511,8 +508,6 @@ public class AWS_Scrape {
      */
     public static File resultsToJson(HashMap<String, ArrayList<String>> results) {
         File jsonOutput = AWS_Wrapper.createTmp("output", ".json");
-        // File jsonOutput = new File
-        // (outputFilePath+TestOutput.inputPdfName+".json");
         try {
             jsonOutput.createNewFile();
         } catch(IOException e1) {
@@ -528,7 +523,9 @@ public class AWS_Scrape {
                 }
                 fileObject.put(criteria, list);
             } else {
-                if (entry.getValue().size() > 0) fileObject.put(criteria, entry.getValue().get(0));
+                if(entry.getValue().size() > 0) {
+                    fileObject.put(criteria, entry.getValue().get(0));
+                }
             }
         }
         FileWriter filew = null;

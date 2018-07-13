@@ -30,7 +30,7 @@ public class Geocode {
 
     public Geocode() {
         context = new GeoApiContext.Builder().apiKey(properties.getKey("GoogleAPI")).build();
-        gson    = new GsonBuilder().setPrettyPrinting().create();
+        gson = new GsonBuilder().setPrettyPrinting().create();
     }
 
     /**
@@ -74,10 +74,10 @@ public class Geocode {
         // take substrings of scraped/geocoded addressed up to state
         // abbreviations, results in more comparable substrings
         Pattern scrapePattern = Pattern.compile(".*, [a-zA-Z]{2}( |[.])?");
-        Pattern geoPattern    = Pattern.compile(", [A-Z]{2} ");
+        Pattern geoPattern = Pattern.compile(", [A-Z]{2} ");
         Matcher scrapeMatcher = scrapePattern.matcher(scrapedAddress);
-        Matcher geoMatcher    = geoPattern.matcher(geocodedAddress);
-        int scrapedEndIndex   = scrapeMatcher.find() ? scrapeMatcher.end() : scrapedAddress.length();
+        Matcher geoMatcher = geoPattern.matcher(geocodedAddress);
+        int scrapedEndIndex = scrapeMatcher.find() ? scrapeMatcher.end() : scrapedAddress.length();
         int geoIndex = geoMatcher.find() ? geoMatcher.end() : geocodedAddress.length();
         // find lev distance between the two modified address strings
         int levD = levDistance.apply(scrapedAddress.substring(0, scrapedEndIndex),

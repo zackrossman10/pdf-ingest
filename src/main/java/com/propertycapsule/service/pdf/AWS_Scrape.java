@@ -519,15 +519,16 @@ public class AWS_Scrape {
             e1.printStackTrace();
         }
         JSONObject fileObject = new JSONObject();
-        for(String criteria : propertyCriteria) {
+        for(HashMap.Entry<String, ArrayList<String>> entry : results.entrySet()) {
+            String criteria = entry.getKey();
             if(criteria.equals("Emails") || criteria.equals("Phone Numbers") || criteria.equals("Contact Names")) {
                 JSONArray list = new JSONArray();
-                for(String result : results.get(criteria)) {
+                for(String result : entry.getValue()) {
                     list.add(result);
                 }
                 fileObject.put(criteria, list);
             } else {
-                fileObject.put(criteria, results.get(criteria).get(0));
+                if (entry.getValue().size() > 0) fileObject.put(criteria, entry.getValue().get(0));
             }
         }
         FileWriter filew = null;

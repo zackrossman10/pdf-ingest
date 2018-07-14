@@ -40,13 +40,11 @@ public class AWS_Wrapper implements RequestHandler<Map<String, Map<String, Objec
     public static final AmazonS3Client s3Client = new AmazonS3Client(new AWSCredentialsProviderChain(
             new InstanceProfileCredentialsProvider(),
             new ProfileCredentialsProvider()));
-//    public static final AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
-//            .withCredentials(new AWSStaticCredentialsProvider(awsCreds)).withRegion(Regions.US_EAST_1).build();
     public static Geocode geocoder = new Geocode();
 
     // simple aws testing code
     public static void main(String[] args) {
-        System.out.println(properties.getKey("AWSAccessKeyId"));
+//        System.out.println(properties.getKey("AWSAccessKeyId"));
         S3Object o = s3Client.getObject(s3InputBucket, "30-29th-Street-Brochure-08.23.16.pdf");
         File tempPdfFile = new File(
                 "/Users/zacharycolerossman/Documents/ML_Flyer_Data/Complete_Test_Set/_20151113 Lonetree.pdf");

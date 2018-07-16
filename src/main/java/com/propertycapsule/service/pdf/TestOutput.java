@@ -16,7 +16,6 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 
 public class TestOutput {
-    public static final BasicAWSCredentials awsCreds = AWS_Wrapper.awsCreds;
     public static final String s3OutputBucket = AWS_Wrapper.s3OutputBucket;
     public static final AmazonS3 s3Client = AWS_Wrapper.s3Client;
     public static final String outputFilePath = "/Users/zacharycolerossman/Documents/ML_Flyer_Data/Output_Txts/";

@@ -11,12 +11,11 @@
 package com.propertycapsule.service.pdf;
 
 import com.amazonaws.AmazonServiceException;
-import com.amazonaws.auth.AWSCredentialsProviderChain;
 import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.auth.InstanceProfileCredentialsProvider;
-import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
+import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
@@ -30,22 +29,16 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class AWS_Wrapper implements RequestHandler<Map<String, Map<String, Object>[]>, String> {
-    public static Keys properties = new Keys();
-    public static BasicAWSCredentials awsCreds = new BasicAWSCredentials(properties.getKey("AWSAccessKeyId"),
-            properties.getKey("AWSSecretKey"));
     public static final String s3InputBucket = "flyerdata";
     public static final String s3OutputBucket = "flyeroutput";
     public static final String s3NoAddressBucket = "noaddress";
     @SuppressWarnings("deprecation")
-    public static final AmazonS3Client s3Client = new AmazonS3Client(new AWSCredentialsProviderChain(
-            new InstanceProfileCredentialsProvider(),
-            new ProfileCredentialsProvider()));
+    public static AmazonS3 s3Client = new AmazonS3Client(DefaultAWSCredentialsProviderChain.getInstance());
     public static Geocode geocoder = new Geocode();
 
     // simple aws testing code
     public static void main(String[] args) {
-//        System.out.println(properties.getKey("AWSAccessKeyId"));
-        S3Object o = s3Client.getObject(s3InputBucket, "30-29th-Street-Brochure-08.23.16.pdf");
+        S3Object o = s3Client.getObject(s3InputBucket, "33_Norfolk_SFRE_16_02xx.pdf");
         File tempPdfFile = new File(
                 "/Users/zacharycolerossman/Documents/ML_Flyer_Data/Complete_Test_Set/_20151113 Lonetree.pdf");
         File jsonResult = AWS_Scrape.scrape(tempPdfFile);

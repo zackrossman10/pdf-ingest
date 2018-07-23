@@ -7,7 +7,7 @@
  * 3) export that scraped information as a .csv or .json file
  */
 
-package com.propertycapsule.service.pdf;
+package com.propertycapsule.service.pdf.sequential;
 
 import java.io.BufferedReader;
 import java.io.File;

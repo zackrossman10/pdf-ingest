@@ -1,4 +1,4 @@
-package com.propertycapsule.service.pdf;
+package com.propertycapsule.service.pdf.sequential;
 /**
  * Class to break up input from lines into lexical items, namely
  * words and punctuation.  Lines are entered and decomposed into parts

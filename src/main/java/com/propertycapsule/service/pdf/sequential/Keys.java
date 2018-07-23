@@ -1,4 +1,4 @@
-package com.propertycapsule.service.pdf;
+package com.propertycapsule.service.pdf.sequential;
 
 import java.io.IOException;
 import java.io.InputStream;

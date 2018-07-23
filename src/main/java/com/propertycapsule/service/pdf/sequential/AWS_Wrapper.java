@@ -8,7 +8,7 @@
  * and create a new .json file with the results in another s3 bucket
  */
 
-package com.propertycapsule.service.pdf;
+package com.propertycapsule.service.pdf.sequential;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.BasicAWSCredentials;

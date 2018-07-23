@@ -6,7 +6,7 @@
  * scraped property addresses
  */
 
-package com.propertycapsule.service.pdf;
+package com.propertycapsule.service.pdf.sequential;
 
 import com.google.maps.*;
 import com.google.maps.errors.ApiException;

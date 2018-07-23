@@ -5,7 +5,7 @@
  * Class used to test the scraping of PDFs in AWS_Scrape class
  */
 
-package com.propertycapsule.service.pdf;
+package com.propertycapsule.service.pdf.sequential;
 
 import java.io.File;
 import java.io.FileWriter;

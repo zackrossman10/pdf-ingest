@@ -172,8 +172,8 @@ public class ScrapeTask implements Runnable {
             boolean foundTerm = false;
             boolean foundSF = false;
             while((line = bufferReader.readLine()) != null) {
-                // replace all horizontal whitespace chars with spaces for regex
-                // matching
+                // replace horizontal whitespace chars with spaces (for regex
+                // purposes)
                 line = line.replaceAll(" ", " ");
                 String lastToken = "";
                 ws.addLexItems(line);
@@ -183,7 +183,7 @@ public class ScrapeTask implements Runnable {
                         // 91711" (with street address on the previous line)
                         if(!(previousLine.contains("suite") || previousLine.contains("floor") || line.contains("suite")
                                 || line.contains("floor"))) {
-                            // avoid address with "suite" or "floor", usaully
+                            // avoid address with "suite" or "floor", usually
                             // the office address
                             if(line.length() < 35) {
                                 // avoid matching random text by limiting

@@ -16,7 +16,8 @@ public class Keys {
     String result = "";
     InputStream inputStream;
 
-    public String getKey(String key) {
+    //get the value of a key
+    public String getKeyValue(String key) {
         try {
             inputStream = getClass().getClassLoader().getResourceAsStream("config.properties");
             prop.load(inputStream);

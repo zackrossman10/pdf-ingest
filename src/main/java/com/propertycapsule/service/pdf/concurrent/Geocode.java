@@ -20,12 +20,14 @@ import org.apache.commons.text.similarity.LevenshteinDistance;
 public class Geocode {
     public static Keys properties = new Keys();
     public GeoApiContext context;
+    // accuracy of address can be inferred by the address type (returned by
+    // geocoder)
     public final String[] accurateTypes = { "STREET_NUMBER", "PREMISE", "SUBPREMISE", "INTERSECTION" };
     public final String[] approximateTypes = { "ROUTE", "LOCALITY", "POSTAL CODE", "NEIGHBORHOOD" };
     public LevenshteinDistance levDistance = new LevenshteinDistance();
 
     public Geocode() {
-        context = new GeoApiContext.Builder().apiKey(properties.getKey("GoogleAPI")).build();
+        context = new GeoApiContext.Builder().apiKey(properties.getKeyValue("GoogleAPI")).build();
     }
 
     /**
@@ -57,17 +59,17 @@ public class Geocode {
      * @return the calculated lev distance as a string
      */
     public String getLevDistance(String scrapedAddress, String geocodedAddress) {
-        // take substrings of scraped/geocoded addressed up to state
-        // abbreviations, results in more comparable substrings
+        // use substrings of scraped/geocoded addresses (up to state
+        // abbreviation), results in more comparable substrings
         Pattern scrapePattern = Pattern.compile(".*, [a-zA-Z]{2}( |[.])?");
         Pattern geoPattern = Pattern.compile(", [A-Z]{2} ");
         Matcher scrapeMatcher = scrapePattern.matcher(scrapedAddress);
         Matcher geoMatcher = geoPattern.matcher(geocodedAddress);
         int scrapedEndIndex = scrapeMatcher.find() ? scrapeMatcher.end() : scrapedAddress.length();
-        int geoIndex = geoMatcher.find() ? geoMatcher.end() : geocodedAddress.length();
+        int geoEndIndex = geoMatcher.find() ? geoMatcher.end() : geocodedAddress.length();
         // find lev distance between the two modified address strings
         int levD = levDistance.apply(scrapedAddress.substring(0, scrapedEndIndex),
-                geocodedAddress.substring(0, geoIndex).toLowerCase());
+                geocodedAddress.substring(0, geoEndIndex).toLowerCase());
         return Integer.toString(levD);
     }
 

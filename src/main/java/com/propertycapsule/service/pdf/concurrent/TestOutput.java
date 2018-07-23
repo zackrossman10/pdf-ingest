@@ -2,7 +2,7 @@
  * @author Zack Rossman
  * @version 7/9/18
  * 
- * Class used to test the scraping of PDFs in AWS_Scrape class
+ * Class used for testing the parallel scraper
  */
 
 package com.propertycapsule.service.pdf.concurrent;

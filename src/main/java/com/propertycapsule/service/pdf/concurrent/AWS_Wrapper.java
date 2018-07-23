@@ -3,7 +3,7 @@
  * @version 7/5/18
  * 
  * Main handler function for lambda function
- * Called when an s3 object is created, will scrape this PDF
+ * Called when an s3 object is created, will scrape this PDF (USING THREADING)
  * and create a new .json file with the results in another s3 bucket
  */
 

@@ -65,8 +65,8 @@ public class ParallelScraper {
         PDDocument document = null;
         try {
             document = PDDocument.load(input);
-            // translate PDF into multiple txt files of size <parsedPageLength>
-            // chars
+            // translate PDF into multiple txt files, each with
+            // <parsedPageLength> chars
             ArrayList<File> txtFiles = stringToMultipleTxts(pdfToString(document));
             // create pool for threading
             ExecutorService pool = Executors.newFixedThreadPool(poolSize);
@@ -78,11 +78,12 @@ public class ParallelScraper {
                 arrTasks.add(task);
                 pageCounter++;
             }
+            //execute tasks
             for(Runnable task : arrTasks) {
                 pool.execute(task);
             }
-            pool.shutdown();
             // wait for threads to finish
+            pool.shutdown();
             try {
                 while(!pool.awaitTermination(24L, TimeUnit.HOURS)) {
                     System.out.println("Not yet. Still waiting for termination");

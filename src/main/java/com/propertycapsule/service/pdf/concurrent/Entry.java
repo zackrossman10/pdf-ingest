@@ -14,7 +14,7 @@ public class Entry implements Comparable<Entry> {
     /**
      * 
      * @param pageNumber
-     *            on which this property data was found
+     *            where this property data was found in the PDF
      * @param propertyData
      *            String representing an email, address, etc. from the PDF
      */

@@ -446,10 +446,8 @@ public class AWS_Scrape {
                                             + lastName.substring(0, 1).toUpperCase()
                                             + lastName.substring(1).toLowerCase();
                                     if(entry.contains("@")) {
-                                        // for case that email itself is the
-                                        // only
-                                        // matched string, return the text
-                                        // before "@"
+                                        // for case that email itself is the only
+                                        // matched string, return the text before "@"
                                         entry = entry.substring(entry.indexOf(searchName), entry.indexOf("@"));
                                     }
                                     contacts.add(entry);

@@ -102,7 +102,8 @@ public class ParallelScraper {
                 }
             }
         }
-        return resultsToJson();
+        return null;
+//        return resultsToJson();
     }
 
     /**

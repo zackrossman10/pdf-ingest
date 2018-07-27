@@ -15,6 +15,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
 public class ScrapeTask implements Runnable {
     public static final HashMap<String, String> abbreviations = new HashMap<String, String>() {
         {
@@ -73,6 +76,7 @@ public class ScrapeTask implements Runnable {
     };
     private int taskPageNumber;
     private File txtDocument;
+
 
     /**
      * @param inputTxt
